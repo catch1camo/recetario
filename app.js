@@ -1,18 +1,20 @@
-// Simple recipe app using localStorage
+// Simple recipe app using Firebase
 
-/* DEL FOR FIREBASE
-const STORAGE_KEY = "myRecipeApp.recipes.v1";
-*/
+// Optional debug 
+console.log("app.js loaded");
+// Debug: see what Firebase apps exist at this point
+console.log("firebase present?", typeof firebase !== "undefined");
+console.log("firebase.apps before init in app.js:", firebase.apps);
 
-let recipes = [];
-let activeRecipeId = null;
-let activeTagFilter = null;
 
 // Firebase handles
 const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
 
+let recipes = [];
+let activeRecipeId = null;
+let activeTagFilter = null;
 let currentUser = null;
 
 // Auth elements - Firebase
