@@ -298,13 +298,15 @@ button {
 
 /* Detail */
 
-/* NEW U/X */
-#recipeDetail {
-  position: static;
-  max-height: none;
-  overflow: visible;
-  box-shadow: none;
-  border-radius: 0;
+/* NEW U/X – desktop behaviour for the detail panel */
+@media (min-width: 769px) {
+  #recipeDetail {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    box-shadow: none;
+    border-radius: 0;
+  }
 }
 
 /* NEW U/X */
