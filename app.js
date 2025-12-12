@@ -212,9 +212,14 @@ async function loadRecipesFromCloud() {
     }
   });
 
-  if (!activeRecipeId && recipes.length > 0) {
-    activeRecipeId = recipes[0].id;
+  // On mobile (or narrow screens), start with list only (no auto-open detail)
+if (!activeRecipeId && recipes.length > 0) {
+  if (window.innerWidth > 768) {
+    activeRecipeId = recipes[0].id; // desktop default
+  } else {
+    activeRecipeId = null; // mobile: keep closed
   }
+}
 
   render();
 }
