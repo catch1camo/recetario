@@ -80,7 +80,7 @@ body {
   padding: 0.4rem 0.6rem;
   border-radius: 6px;
   border: 1px solid #ccc;
-  font-size: 0.90rem;
+  font-size: 0.95rem;
 }
 
 .tag-block {
@@ -297,10 +297,6 @@ button {
   font-size: 0.75rem;
 }
 
-.recipe-card.active {
-  border-color: #222;
-}
-
 .empty-state {
   grid-column: 1 / -1;
   margin-top: 2rem;
@@ -336,6 +332,15 @@ button {
   padding: 0.9rem 1rem;
   border: 1px solid #e0e0e0;
   align-self: start;
+}
+
+@media (min-width: 901px) {
+  #recipeDetail {
+    position: sticky;
+    top: 64px; /* approx header height; tweak if needed */
+    max-height: calc(100vh - 64px - 1rem);
+    overflow-y: auto; /* long recipes scroll inside the panel */
+  }
 }
 
 .recipe-detail header {

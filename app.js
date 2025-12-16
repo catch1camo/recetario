@@ -439,6 +439,8 @@ function renderRecipeList() {
       const card = document.createElement("div");
       card.className = "recipe-card";
       card.dataset.id = recipe.id;
+
+      // highlight the selected recipe
       if (recipe.id === activeRecipeId) card.classList.add("active");
 
       const titleEl = document.createElement("div");
@@ -473,19 +475,7 @@ function renderRecipeList() {
 
       card.addEventListener("click", () => {
         activeRecipeId = recipe.id;
-        renderDetail();
-
-        // Desktop only: scroll the detail panel into view so it’s obvious something happened
-        if (window.innerWidth > 768) {
-        // If your detail panel is a specific element with id recipeDetail, use that
-        recipeDetailEl.scrollIntoView({ behavior: "smooth", block: "start" });
-
-        // Optional: if your header is sticky, this helps prevent the header from covering the top
-        // Give the browser a tick to render the new detail content first
-        setTimeout(() => {
-        window.scrollBy({ top: -70, left: 0, behavior: "smooth" });
-    }, 0);
-  }
+        render();
       });
 
       recipeListEl.appendChild(card);
