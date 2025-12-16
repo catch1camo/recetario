@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Recetario v6</title>
+  <title>Recetario 5-1</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
 
@@ -41,16 +41,13 @@
 <body>
   <header class="app-header">
     <h1>Recetario</h1>
-    <!-- button added to toggle search and tags bar -->
-    <button id="sidebarToggleBtn" class="sidebar-toggle-btn" aria-label="Search & tags">
-      🔍
-    </button>
+
     <div class="auth-bar">
       <div id="authLoggedOut">
         <input type="email" id="authEmail" placeholder="email" />
         <input type="password" id="authPassword" placeholder="password" />
         <button id="authLoginBtn">Log in</button>
-        <!-- <button id="authRegisterBtn">Sign up</button> -->
+        <button id="authRegisterBtn">Sign up</button>
       </div>
       <div id="authLoggedIn" class="hidden">
         <span id="authUserEmail"></span>
@@ -287,8 +284,7 @@
       </div>
     </div>
   </div>
-  <!-- div tab to close search side bar -->
-  <div id="panelBackdrop" class="panel-backdrop hidden"></div>
+
   <script src="app.js"></script>
 </body>
 </html>
