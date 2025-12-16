@@ -194,6 +194,14 @@ button {
 
   /* Turn the detail panel into a full-screen overlay on mobile */
   #recipeDetail {
+    
+    /* Smoother animation */
+    transform: translateY(16px);
+    opacity: 0;
+    transition: bottom 0.25s ease-out, transform 0.25s ease-out, opacity 0.2s ease-out;
+
+    -webkit-overflow-scrolling: touch; /* smoother iOS scroll */
+    
     position: fixed;
     left: 0;
     right: 0;
@@ -206,13 +214,7 @@ button {
     overflow-y: auto;           /* 🔹 THIS makes long recipes scrollable */
     z-index: 1000;
     /* transition: bottom 0.25s ease-out; */
-    /* Smoother animation */
-    transform: translateY(16px);
-    opacity: 0;
-    transition: bottom 0.25s ease-out, transform 0.25s ease-out, opacity 0.2s ease-out;
-  
-
-    -webkit-overflow-scrolling: touch; /* smoother iOS scroll */
+    
   }
 
  /* When JS adds .sheet-open → slide up */
