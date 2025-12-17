@@ -671,19 +671,6 @@ if (recipe.image) {
   recipeDetailEl.appendChild(img);
 }
 
-// Cook notes (if any)
-if (recipe.cookNotesText) {
-  const notesSection = document.createElement("section");
-  notesSection.className = "recipe-detail-section";
-  const h3 = document.createElement("h3");
-  h3.textContent = "Cook notes";
-  const pre = document.createElement("pre");
-  pre.textContent = recipe.cookNotesText;
-  notesSection.appendChild(h3);
-  notesSection.appendChild(pre);
-  recipeDetailEl.appendChild(notesSection);
-}
-
   // Ingredients/instructions/body sections
   if (recipe.ingredientsText) {
     const section = document.createElement("section");
@@ -707,6 +694,19 @@ if (recipe.cookNotesText) {
     section.appendChild(h3);
     section.appendChild(pre);
     recipeDetailEl.appendChild(section);
+  }
+
+  // Cook notes (if any)
+  if (recipe.cookNotesText) {
+    const notesSection = document.createElement("section");
+    notesSection.className = "recipe-detail-section";
+    const h3 = document.createElement("h3");
+    h3.textContent = "Cook notes";
+    const pre = document.createElement("pre");
+    pre.textContent = recipe.cookNotesText;
+    notesSection.appendChild(h3);
+    notesSection.appendChild(pre);
+    recipeDetailEl.appendChild(notesSection);
   }
 
   if (recipe.body && !recipe.ingredientsText && !recipe.instructionsText) {
@@ -758,7 +758,7 @@ function openModal(tabId = "manualTab", recipeToEdit = null) {
       manualImageEl.value = ""; // clear file input (browsers don't allow preset)
     }
   } else {
-    document.getElementById("modalTitle").textContent = "Add / Import Recipe";
+    document.getElementById("modalTitle").textContent = "+ Add";
     delete manualForm.dataset.editId;
   }
 
