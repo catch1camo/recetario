@@ -106,10 +106,6 @@ const emptyStateEl = document.getElementById("emptyState");
 const searchInputEl = document.getElementById("searchInput");
 const tagListEl = document.getElementById("tagList");
 
-// "Go up" button (mobile helper)
-const goUpBtnEl = document.getElementById("goUpBtn");
-
-
 // Manual extra fields Cook Notes and Image
 const manualNotesEl = document.getElementById("manualNotes");
 const manualImageEl = document.getElementById("manualImage");
@@ -352,6 +348,60 @@ function autoSplitRecipeText(text) {
   return { ingredients, instructions };
 }
 
+/**
+ * Split recipe text into ingredients, instructions, and cook notes when
+ * a Cook Notes / Notes heading exists. Otherwise falls back to
+ * autoSplitRecipeText.
+ */
+function splitRecipeTextWithCookNotes(text) {
+  if (!text) return { ingredients: "", instructions: "", cookNotes: "" };
+
+  const normalized = text.replace(/\r\n/g, "\n");
+  const lines = normalized.split("\n");
+
+  const ingredientHeadingPatterns = [
+    /^\s*ingredients?\s*[:]?\s*$/i,
+    /^\s*ingredientes?\s*[:]?\s*$/i,
+  ];
+  const instructionHeadingPatterns = [
+    /^\s*(instructions?|directions?|method|preparation)\s*[:]?\s*$/i,
+    /^\s*(preparaci[oó]n|preparacion|pasos?)\s*[:]?\s*$/i,
+  ];
+  const cookNotesHeadingPatterns = [
+    /^\s*cook\s*notes?\s*[:]?\s*$/i,
+    /^\s*notes?\s*[:]?\s*$/i,
+    /^\s*notas\s*[:]?\s*$/i,
+  ];
+
+  let ingIdx = -1;
+  let instIdx = -1;
+  let notesIdx = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (ingIdx === -1 && ingredientHeadingPatterns.some((r) => r.test(line))) ingIdx = i;
+    if (instIdx === -1 && instructionHeadingPatterns.some((r) => r.test(line))) instIdx = i;
+    if (notesIdx === -1 && cookNotesHeadingPatterns.some((r) => r.test(line))) notesIdx = i;
+  }
+
+  // If no Cook Notes heading, just do the original split.
+  if (notesIdx === -1) {
+    const { ingredients, instructions } = autoSplitRecipeText(text);
+    return { ingredients, instructions, cookNotes: "" };
+  }
+
+  // Everything after Cook Notes heading is cook notes.
+  const cookNotes = lines.slice(notesIdx + 1).join("\n").trim();
+
+  // For ingredients/instructions, only consider the text BEFORE cook notes.
+  const beforeNotes = lines.slice(0, notesIdx).join("\n");
+
+  // Try explicit ingredients/instructions headings within the beforeNotes area.
+  const { ingredients, instructions } = autoSplitRecipeText(beforeNotes);
+
+  return { ingredients, instructions, cookNotes };
+}
+
 
 /**
  * Resize and compress an image file before saving.
@@ -398,56 +448,11 @@ function resizeImageFile(file, maxWidth = 800, quality = 0.7) {
 
 
 
-
-// --- Go up button helpers ---
-function getActiveScrollTarget() {
-  // On mobile, when the detail sheet is open, the recipe panel scrolls.
-  if (
-    window.innerWidth <= 768 &&
-    recipeDetailEl &&
-    recipeDetailEl.classList.contains("sheet-open") &&
-    !recipeDetailEl.classList.contains("hidden")
-  ) {
-    return recipeDetailEl;
-  }
-  return window;
-}
-
-function getScrollTop(target) {
-  if (target === window) {
-    return (
-      document.documentElement.scrollTop ||
-      document.body.scrollTop ||
-      0
-    );
-  }
-  return target.scrollTop || 0;
-}
-
-function updateGoUpVisibility() {
-  if (!goUpBtnEl) return;
-  const target = getActiveScrollTarget();
-  const scrollTop = getScrollTop(target);
-  const threshold = target === window ? window.innerHeight : target.clientHeight;
-
-  goUpBtnEl.classList.toggle("hidden", scrollTop <= threshold);
-}
-
-function scrollToTop() {
-  const target = getActiveScrollTarget();
-  if (target === window) {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  } else {
-    target.scrollTo({ top: 0, behavior: "smooth" });
-  }
-}
-
 // Render functions
 function render() {
   renderRecipeList();
   renderTagList();
   renderDetail();
-  updateGoUpVisibility();
 }
 
 function renderRecipeList() {
@@ -498,10 +503,14 @@ function renderRecipeList() {
 
       const metaEl = document.createElement("div");
       metaEl.className = "recipe-card-meta";
-      // Only show source (no saved date/time)
-      if (recipe.source) {
-        metaEl.textContent = `Source: ${recipe.source}`;
-      }
+      const sourcePart = recipe.source ? `Source: ${recipe.source} · ` : "";
+      const date = new Date(recipe.updatedAt || recipe.createdAt);
+      metaEl.textContent =
+        sourcePart +
+        `Saved: ${date.toLocaleDateString()} ${date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`;
 
       const tagsEl = document.createElement("div");
       tagsEl.className = "recipe-card-tags";
@@ -513,7 +522,7 @@ function renderRecipeList() {
       });
 
       card.appendChild(titleEl);
-      if (recipe.source) card.appendChild(metaEl);
+      card.appendChild(metaEl);
       if ((recipe.tags || []).length > 0) {
         card.appendChild(tagsEl);
       }
@@ -605,10 +614,8 @@ function renderDetail() {
   meta.className = "recipe-detail-meta";
   const lines = [];
   if (recipe.source) lines.push(`Source: ${recipe.source}`);
-  if (lines.length > 0) {
-    meta.textContent = lines.join(" · ");
-    titleBlock.appendChild(meta);
-  }
+  meta.textContent = lines.join(" · ");
+  titleBlock.appendChild(meta);
 
   const tagsDiv = document.createElement("div");
   tagsDiv.className = "recipe-detail-tags";
@@ -696,19 +703,6 @@ if (recipe.image) {
     recipeDetailEl.appendChild(section);
   }
 
-  // Cook notes (if any)
-  if (recipe.cookNotesText) {
-    const notesSection = document.createElement("section");
-    notesSection.className = "recipe-detail-section";
-    const h3 = document.createElement("h3");
-    h3.textContent = "Cook notes";
-    const pre = document.createElement("pre");
-    pre.textContent = recipe.cookNotesText;
-    notesSection.appendChild(h3);
-    notesSection.appendChild(pre);
-    recipeDetailEl.appendChild(notesSection);
-  }
-
   if (recipe.body && !recipe.ingredientsText && !recipe.instructionsText) {
     const section = document.createElement("section");
     section.className = "recipe-detail-section";
@@ -719,6 +713,19 @@ if (recipe.image) {
     section.appendChild(h3);
     section.appendChild(pre);
     recipeDetailEl.appendChild(section);
+  }
+
+  // Cook notes (if any) — keep at the END of the panel
+  if (recipe.cookNotesText) {
+    const notesSection = document.createElement("section");
+    notesSection.className = "recipe-detail-section";
+    const h3 = document.createElement("h3");
+    h3.textContent = "Cook notes";
+    const pre = document.createElement("pre");
+    pre.textContent = recipe.cookNotesText;
+    notesSection.appendChild(h3);
+    notesSection.appendChild(pre);
+    recipeDetailEl.appendChild(notesSection);
   }
 
   // NEW U/X Mobile: open as a slide-up bottom sheet
@@ -758,7 +765,7 @@ function openModal(tabId = "manualTab", recipeToEdit = null) {
       manualImageEl.value = ""; // clear file input (browsers don't allow preset)
     }
   } else {
-    document.getElementById("modalTitle").textContent = "+ Add";
+    document.getElementById("modalTitle").textContent = "Add / Import Recipe";
     delete manualForm.dataset.editId;
   }
 
@@ -880,17 +887,6 @@ async function handleFetchUrl() {
 }
 
 // Event listeners
-
-// Go up button: watch both the window and the mobile detail panel scroll
-if (goUpBtnEl) {
-  goUpBtnEl.addEventListener("click", scrollToTop);
-  window.addEventListener("scroll", updateGoUpVisibility, { passive: true });
-  window.addEventListener("resize", updateGoUpVisibility);
-  if (recipeDetailEl) {
-    recipeDetailEl.addEventListener("scroll", updateGoUpVisibility, { passive: true });
-  }
-}
-
 
 addRecipeBtn.addEventListener("click", () => openModal("manualTab"));
 closeModalBtn.addEventListener("click", closeModal);
@@ -1092,7 +1088,8 @@ fileForm.addEventListener("submit", async (e) => {
     const text = await file.text();
     const title = file.name.replace(/\.[^.]+$/, "") || "(Untitled file)";
 
-    const { ingredients, instructions } = autoSplitRecipeText(text);
+    // Support headings like "Cook notes" in imported .txt files
+    const { ingredients, instructions, cookNotes } = splitRecipeTextWithCookNotes(text);
 
     const recipe = {
       id: null,
@@ -1101,7 +1098,7 @@ fileForm.addEventListener("submit", async (e) => {
       tags: [],
       ingredientsText: ingredients,
       instructionsText: instructions,
-      cookNotesText: "",
+      cookNotesText: cookNotes,
       image: "",
       body: text,
       createdAt: now,
