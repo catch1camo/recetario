@@ -90,7 +90,7 @@ body {
   width: 32px !important;
   height: 32px !important;
   display: block; /* Helps with alignment on mobile */
-  stroke: currentColor; /* Inherits the button's text color */
+  /*stroke: currentColor;  Inherits the button's text color */
 }
 
 #userMenuBtn {
