@@ -40,7 +40,7 @@
 </head>
 <body>
   <header class="app-header">
-    <h1>Rece7ario</h1>
+    <h1>Recetari8</h1>
 
     <div class="auth-bar">
       <div id="authLoggedOut">
@@ -49,10 +49,15 @@
         <button id="authLoginBtn">Log in</button>
         <button id="authRegisterBtn">Sign up</button><!--  -->
       </div>
-      <div id="authLoggedIn" class="hidden">
+      
+    <div id="authLoggedIn" class="hidden user-menu-container">
+        <button id="userMenuBtn" class="icon-btn">👤</button>
+        <div id="userDropdown" class="user-dropdown hidden">
         <span id="authUserEmail"></span>
-        <button id="authLogoutBtn">Log out</button>
-      </div>
+        <hr>
+        <button id="authLogoutBtn" class="secondary-btn">Log out</button>
+        </div>
+    </div>
 
     <button id="addRecipeBtn">+ Add</button>
     </div>

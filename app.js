@@ -79,6 +79,8 @@ authLogoutBtn.addEventListener("click", async () => {
 
 // Handle auth state changes - Firebase
 auth.onAuthStateChanged(async (user) => {
+  if (userDropdown) userDropdown.classList.add("hidden"); // Reset UI on state change
+
   if (user) {
     currentUser = user;
     authLoggedOutEl.classList.add("hidden");
@@ -105,6 +107,23 @@ const recipeDetailEl = document.getElementById("recipeDetail");
 const emptyStateEl = document.getElementById("emptyState");
 const searchInputEl = document.getElementById("searchInput");
 const tagListEl = document.getElementById("tagList");
+
+// user button
+const userMenuBtn = document.getElementById("userMenuBtn");
+const userDropdown = document.getElementById("userDropdown");
+
+// user button toggle logic
+userMenuBtn.addEventListener("click", (e) => {
+  e.stopPropagation(); 
+  userDropdown.classList.toggle("hidden");
+});
+
+// user button Close dropdown when clicking anywhere else
+window.addEventListener("click", () => {
+  if (userDropdown && !userDropdown.classList.contains("hidden")) {
+    userDropdown.classList.add("hidden");
+  }
+});
 
 // "Go up" button (mobile helper)
 const goUpBtnEl = document.getElementById("goUpBtn");
