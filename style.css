@@ -86,13 +86,6 @@ body {
   word-break: break-all;
 }
 
-#userMenuBtn svg {
-  width: 32px !important;
-  height: 32px !important;
-  display: block; /* Helps with alignment on mobile */
-  /*stroke: currentColor;  Inherits the button's text color */
-}
-
 #userMenuBtn {
   min-width: 44px; /* Apple/Google recommended touch target size */
   min-height: 44px;
@@ -116,10 +109,10 @@ body {
 }
 
 #userMenuBtn svg {
-  width: 28px !important;
-  height: 28px !important;
+  width: 32px !important;
+  height: 32px !important;
   display: block; /* Helps with alignment on mobile */
-  stroke: currentColor; /* Inherits the button's text color */
+  stroke: currentColor #222 ; /* Inherits the button's text color */
 }
 
 #userMenuBtn:hover {
