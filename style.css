@@ -87,10 +87,23 @@ body {
 }
 
 #userMenuBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  /**/
   font-size: 1.4rem;
   padding: 0.2rem 0.5rem;
-  border-radius: 50%;
+  border-radius: 50%; 
+  
   transition: background 0.2s;
+}
+
+#userMenuBtn i {
+  width: 28px;  /* Adjust size as needed */
+  height: 28px;
+  color: #222;
+  pointer-events: none; /* Crucial: clicks go through to the button */
 }
 
 #userMenuBtn:hover {

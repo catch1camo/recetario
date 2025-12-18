@@ -37,10 +37,13 @@
     console.log("Firebase apps after init:", firebase.apps);
   </script>
 
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
 </head>
 <body>
   <header class="app-header">
-    <h1>Recetari8</h1>
+    <h1>Recetari8.1</h1>
 
     <div class="auth-bar">
       <div id="authLoggedOut">
@@ -51,7 +54,9 @@
       </div>
       
     <div id="authLoggedIn" class="hidden user-menu-container">
-        <button id="userMenuBtn" class="icon-btn">👤</button>
+        <button id="userMenuBtn" class="icon-btn">
+          <i data-lucide="circle-user-round"></i>
+        </button>
         <div id="userDropdown" class="user-dropdown hidden">
         <span id="authUserEmail"></span>
         <hr>

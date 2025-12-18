@@ -118,12 +118,22 @@ userMenuBtn.addEventListener("click", (e) => {
   userDropdown.classList.toggle("hidden");
 });
 
-// user button Close dropdown when clicking anywhere else
-window.addEventListener("click", () => {
-  if (userDropdown && !userDropdown.classList.contains("hidden")) {
+// user button Close dropdown when clicking anywhere else "old click outside"
+//window.addEventListener("click", () => {
+//  if (userDropdown && !userDropdown.classList.contains("hidden")) {
+//    userDropdown.classList.add("hidden");
+//  }
+//});
+
+// Improved Click-Outside Logic for Desktop & Mobile "new click outside"
+document.addEventListener("click", (e) => {
+  const isClickInside = userMenuBtn.contains(e.target) || userDropdown.contains(e.target);
+  
+  if (!isClickInside) {
     userDropdown.classList.add("hidden");
   }
 });
+
 
 // "Go up" button (mobile helper)
 const goUpBtnEl = document.getElementById("goUpBtn");
@@ -1144,3 +1154,4 @@ fileForm.addEventListener("submit", async (e) => {
 
 // Auth listener will load recipes when logged in
 render();
+lucide.createIcons(); // replaces <i data-lucide="..."> with actual SVGs
