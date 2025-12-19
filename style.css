@@ -98,14 +98,17 @@ body {
   font-size: 1.4rem;
   padding: 0.2rem;
   border-radius: 50%; 
-  
+
+  color: #222 !important; /* Force text/icon color */
+  -webkit-tap-highlight-color: transparent; /* Removes the blue flash when tapping */
+
   transition: background 0.2s;
 }
 
 #userMenuBtn i {
   width: 28px;  /* Adjust size as needed */
   height: 28px;
-  color: #222;
+  color: #222 !important;
   pointer-events: none; /* Crucial: clicks go through to the button */
 }
 
@@ -113,7 +116,7 @@ body {
   width: 28px !important;
   height: 28px !important;
   display: block; /* Helps with alignment on mobile */
-  stroke: currentColor #222 ; /* Inherits the button's text color */
+  stroke: currentColor !important; /* Inherits the button's text color */
 }
 
 #userMenuBtn:hover {
