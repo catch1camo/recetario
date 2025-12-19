@@ -391,6 +391,8 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
+  /* check tag balck color (on mobile)*/
+  color: #222 !important;
 }
 
 .recipe-card-tag {
