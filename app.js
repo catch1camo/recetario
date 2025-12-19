@@ -751,7 +751,7 @@ if (recipe.image) {
   }
 
   // NEW U/X Mobile: open as a slide-up bottom sheet
-  if (window.innerWidth <= 768) {
+  if (window.innerWidth <= 900) {
     recipeDetailEl.classList.add("sheet-open");
     document.body.classList.add("detail-open");
   } else {
