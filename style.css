@@ -271,15 +271,15 @@ button {
 
   /* user button change size from desktop */
   #userMenuBtn i {
-    width: 32px;  /* Adjust size as needed */
-    height: 32px;
+    width: 30px;  /* Adjust size as needed */
+    height: 30px;
     color: #222;
     pointer-events: none; /* Crucial: clicks go through to the button */
   }
 
   #userMenuBtn svg {
-    width: 32px !important;
-    height: 32px !important;
+    width: 30px !important;
+    height: 30px !important;
     display: block; /* Helps with alignment on mobile */
     stroke: currentColor #222 ; /* Inherits the button's text color */
   }
