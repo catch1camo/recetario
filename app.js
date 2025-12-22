@@ -255,6 +255,7 @@ async function saveRecipeToCloud(recipe) {
     const docRef = await colRef.add(dataToSave);
     recipe.id = docRef.id;
   }
+  await loadRecipesFromCloud();
 }
 
 async function deleteRecipeFromCloud(recipeId) {
@@ -968,7 +969,7 @@ manualForm.addEventListener("submit", async (e) => {
         createdAt: now,
         updatedAt: now,
       };
-      recipes.push(recipe);
+
     }
 
     await saveRecipeToCloud(recipe);
@@ -1031,7 +1032,7 @@ urlForm.addEventListener("submit", async (e) => {
   };
 
   // Save to Firestore → Firestore gives `recipe.id`
-  recipes.push(recipe);
+
   await saveRecipeToCloud(recipe);
 
   // Set active recipe and update UI
@@ -1073,7 +1074,6 @@ textForm.addEventListener("submit", async (e) => {
     updatedAt: now,
   };
 
-  recipes.push(recipe);
   await saveRecipeToCloud(recipe);
 
   activeRecipeId = recipe.id;
@@ -1113,7 +1113,6 @@ fileForm.addEventListener("submit", async (e) => {
       updatedAt: now,
     };
 
-    recipes.push(recipe);
     await saveRecipeToCloud(recipe);
 
     lastRecipeId = recipe.id;
