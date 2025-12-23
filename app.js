@@ -79,6 +79,8 @@ auth.onAuthStateChanged(async (user) => {
     authLoggedOutEl.classList.add("hidden");
     authLoggedInEl.classList.remove("hidden");
     authUserEmailEl.textContent = user.email || "(no email)";
+    // Add admin helpers in user menu
+    ensureDedupeButtonInUserMenu();
     // Load this user's recipes
     await loadRecipesFromCloud();
   } else {
@@ -178,6 +180,205 @@ function parseTags(tagString) {
     .filter((t) => t.length > 0);
 }
 
+// --- Duplicate prevention helpers (fingerprint) ---
+function normalizeForFingerprint(s) {
+  return (s || "")
+    .toString()
+    .toLowerCase()
+    .replace(/\r\n/g, "\n")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Stable fingerprint for “same recipe content”
+function recipeFingerprint(recipe) {
+  const title = normalizeForFingerprint(recipe.title);
+  const source = normalizeForFingerprint(recipe.source);
+  const ing = normalizeForFingerprint(recipe.ingredientsText);
+  const inst = normalizeForFingerprint(recipe.instructionsText);
+  const notes = normalizeForFingerprint(recipe.cookNotesText);
+  return [title, source, ing, inst, notes].join("||");
+}
+
+function buildLocalFingerprintIndex() {
+  const map = new Map(); // fp -> recipeId
+  (recipes || []).forEach((r) => {
+    if (!r) return;
+    const fp = r.fingerprint || recipeFingerprint(r);
+    // Keep the first occurrence (we only need existence)
+    if (fp && !map.has(fp) && r.id) map.set(fp, r.id);
+  });
+  return map;
+}
+
+async function findExistingRecipeIdByFingerprint(fp, excludeId = null) {
+  if (!currentUser || !fp) return null;
+
+  // 1) Fast local check
+  const localIndex = buildLocalFingerprintIndex();
+  const localId = localIndex.get(fp);
+  if (localId && localId !== excludeId) return localId;
+
+  // 2) Authoritative Firestore check (cross-device)
+  try {
+    const colRef = db
+      .collection("users")
+      .doc(currentUser.uid)
+      .collection("recipes");
+
+    const snap = await colRef.where("fingerprint", "==", fp).limit(3).get();
+    if (!snap.empty) {
+      const doc = snap.docs.find((d) => d.id !== excludeId) || snap.docs[0];
+      return doc ? doc.id : null;
+    }
+  } catch (e) {
+    console.warn("Fingerprint lookup failed:", e);
+  }
+  return null;
+}
+
+// One-time cloud dedupe: groups by fingerprint, keeps newest, deletes the rest
+async function dedupeRecipesInCloud({ dryRun = true } = {}) {
+  if (!currentUser) {
+    alert("Please log in first.");
+    return { groups: 0, toDelete: 0 };
+  }
+
+  const col = db
+    .collection("users")
+    .doc(currentUser.uid)
+    .collection("recipes");
+
+  const snap = await col.get();
+  const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+  const groups = new Map(); // fp -> array of docs
+  for (const r of docs) {
+    const fp = r.fingerprint || recipeFingerprint(r);
+    if (!fp) continue;
+    if (!groups.has(fp)) groups.set(fp, []);
+    groups.get(fp).push({ ...r, fingerprint: fp });
+  }
+
+  const dupGroups = Array.from(groups.entries()).filter(([, arr]) => arr.length > 1);
+
+  const totalToDelete = dupGroups.reduce((sum, [, arr]) => sum + (arr.length - 1), 0);
+
+  if (dryRun) {
+    console.log("Dedupe dry run — duplicate groups:", dupGroups.length);
+    dupGroups.slice(0, 25).forEach(([fp, arr], i) => {
+      const title = arr[0]?.title || "(untitled)";
+      console.log(`Group #${i + 1} (${arr.length} items)`, { title, ids: arr.map((x) => x.id) });
+    });
+    return { groups: dupGroups.length, toDelete: totalToDelete };
+  }
+
+  // Firestore batch limit is 500 ops. We chunk commits.
+  let deleted = 0;
+  let updated = 0;
+
+  let batch = db.batch();
+  let ops = 0;
+
+  const commitIfNeeded = async () => {
+    if (ops > 0) {
+      await batch.commit();
+      batch = db.batch();
+      ops = 0;
+    }
+  };
+
+  for (const [fp, arr] of dupGroups) {
+    // keep newest by updatedAt/createdAt
+    arr.sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+    const keep = arr[0];
+    const remove = arr.slice(1);
+
+    // Ensure kept doc has fingerprint set
+    batch.set(col.doc(keep.id), { fingerprint: fp }, { merge: true });
+    ops++; updated++;
+
+    for (const r of remove) {
+      batch.delete(col.doc(r.id));
+      ops++; deleted++;
+
+      if (ops >= 450) {
+        await commitIfNeeded();
+      }
+    }
+
+    if (ops >= 450) {
+      await commitIfNeeded();
+    }
+  }
+
+  await commitIfNeeded();
+  return { groups: dupGroups.length, toDelete: totalToDelete, deleted, updated };
+}
+
+// Add a "Dedupe duplicates" button inside the user menu dropdown
+function ensureDedupeButtonInUserMenu() {
+  if (!userDropdown) return;
+
+  // Avoid adding it multiple times
+  if (document.getElementById("dedupeRecipesBtn")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "dedupeRecipesBtn";
+  btn.className = "secondary-btn";
+  btn.style.marginTop = "0.25rem";
+  btn.textContent = "Dedupe duplicates";
+
+  btn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!currentUser) return alert("Please log in first.");
+
+    btn.disabled = true;
+    btn.textContent = "Scanning…";
+
+    try {
+      const scan = await dedupeRecipesInCloud({ dryRun: true });
+
+      if (!scan.groups || !scan.toDelete) {
+        alert("No duplicates found ✅");
+        return;
+      }
+
+      const ok = confirm(
+        `Found ${scan.groups} duplicate group(s) with ${scan.toDelete} duplicate recipe(s) to delete.\n\n` +
+        `This will KEEP the newest recipe in each group and DELETE the rest.\n\nProceed?`
+      );
+
+      if (!ok) return;
+
+      btn.textContent = "Deduping…";
+      const result = await dedupeRecipesInCloud({ dryRun: false });
+
+      alert(
+        `Done ✅\n\nDeleted: ${result.deleted}\nUpdated kept recipes: ${result.updated}\nGroups: ${result.groups}`
+      );
+
+      await loadRecipesFromCloud(); // refresh from source of truth
+    } catch (err) {
+      console.error(err);
+      alert("Dedupe error: " + (err.message || err));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Dedupe duplicates";
+    }
+  });
+
+  // Put it above the Log out button
+  const logoutBtn = userDropdown.querySelector("#authLogoutBtn");
+  if (logoutBtn && logoutBtn.parentNode === userDropdown) {
+    userDropdown.insertBefore(btn, logoutBtn);
+  } else {
+    userDropdown.appendChild(btn);
+  }
+}
+
 // Utility: generate ID
 function generateId() {
   return "r_" + Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -200,8 +401,17 @@ async function loadRecipesFromCloud() {
 
   // Firestore stores timestamps as objects; convert if needed
   recipes.forEach((r) => {
-    if (r.createdAt && r.createdAt.toMillis) r.createdAt = r.createdAt.toMillis();
-    if (r.updatedAt && r.updatedAt.toMillis) r.updatedAt = r.updatedAt.toMillis();
+    if (r.createdAt && r.createdAt.toMillis) {
+      r.createdAt = r.createdAt.toMillis();
+    }
+    if (r.updatedAt && r.updatedAt.toMillis) {
+      r.updatedAt = r.updatedAt.toMillis();
+    }
+  });
+
+  // Ensure fingerprint exists in-memory for quick duplicate checks
+  recipes.forEach((r) => {
+    if (r && !r.fingerprint) r.fingerprint = recipeFingerprint(r);
   });
 
   // On mobile (or narrow screens), start with list only (no auto-open detail)
@@ -236,7 +446,6 @@ async function saveRecipeToCloud(recipe) {
     const docRef = await colRef.add(dataToSave);
     recipe.id = docRef.id;
   }
-  await loadRecipesFromCloud();
 }
 
 async function deleteRecipeFromCloud(recipeId) {
@@ -892,8 +1101,12 @@ tabButtons.forEach((btn) => {
   });
 });
 
+let searchDebounceTimer = null;
 searchInputEl.addEventListener("input", () => {
-  renderRecipeList();
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    renderRecipeList();
+  }, 150);
 });
 
 // Manual form submit
@@ -916,6 +1129,36 @@ manualForm.addEventListener("submit", async (e) => {
 
   // Helper to create/update the recipe and save it
   const saveRecipeObject = async (imageValue) => {
+    // Compute fingerprint for duplicate prevention
+    const fp = recipeFingerprint({
+      title: title || "(Untitled recipe)",
+      source,
+      ingredientsText,
+      instructionsText,
+      cookNotesText,
+    });
+
+    // If this content already exists (different doc id), open it instead of creating/updating a duplicate.
+    const existingId = await findExistingRecipeIdByFingerprint(fp, editId || null);
+
+    // New recipe: prevent duplicate creates
+    if (!editId && existingId) {
+      alert("This recipe already exists. Opening the existing one instead of creating a duplicate.");
+      activeRecipeId = existingId;
+      render();
+      closeModal();
+      return;
+    }
+
+    // Edit: if edit would turn this into a duplicate of another recipe, block it.
+    if (editId && existingId && existingId !== editId) {
+      alert("A recipe with the same content already exists. Opening the existing one instead.");
+      activeRecipeId = existingId;
+      render();
+      closeModal();
+      return;
+    }
+
     let recipe;
 
     if (editId) {
@@ -930,6 +1173,7 @@ manualForm.addEventListener("submit", async (e) => {
           ingredientsText,
           instructionsText,
           cookNotesText,
+          fingerprint: fp,
           // if imageValue is null, keep existing image
           image: imageValue !== null ? imageValue : existing.image || "",
           updatedAt: now,
@@ -945,12 +1189,13 @@ manualForm.addEventListener("submit", async (e) => {
         ingredientsText,
         instructionsText,
         cookNotesText,
-        image: imageValue || "",  // base64 data URL or empty string
+        fingerprint: fp,
+        image: imageValue || "", // base64 data URL or empty string
         body: "",
         createdAt: now,
         updatedAt: now,
       };
-
+      recipes.push(recipe);
     }
 
     await saveRecipeToCloud(recipe);
@@ -958,6 +1203,7 @@ manualForm.addEventListener("submit", async (e) => {
     render();
     closeModal();
   };
+
 
   // If a new image file was selected, resize/compress and save
   if (file) {
@@ -997,6 +1243,23 @@ urlForm.addEventListener("submit", async (e) => {
   const cookNotesText = urlNotesEl.value.trim();
   const now = Date.now();
 
+  const fp = recipeFingerprint({
+    title,
+    source,
+    ingredientsText,
+    instructionsText,
+    cookNotesText,
+  });
+
+  const existingId = await findExistingRecipeIdByFingerprint(fp, null);
+  if (existingId) {
+    alert("This recipe already exists. Opening the existing one instead of creating a duplicate.");
+    activeRecipeId = existingId;
+    render();
+    closeModal();
+    return;
+  }
+
   // Build recipe object for Firestore
   const recipe = {
     id: null,
@@ -1006,17 +1269,16 @@ urlForm.addEventListener("submit", async (e) => {
     ingredientsText,
     instructionsText,
     cookNotesText,
+    fingerprint: fp,
     image: "", // No image for URL imports, user can edit later
     body: "",
     createdAt: now,
     updatedAt: now,
   };
 
-  // Save to Firestore → Firestore gives `recipe.id`
-
+  recipes.push(recipe);
   await saveRecipeToCloud(recipe);
 
-  // Set active recipe and update UI
   activeRecipeId = recipe.id;
   render();
   closeModal();
@@ -1041,6 +1303,23 @@ textForm.addEventListener("submit", async (e) => {
   // Auto-split the pasted text
   const { ingredients, instructions } = autoSplitRecipeText(body);
 
+  const fp = recipeFingerprint({
+    title,
+    source,
+    ingredientsText: ingredients,
+    instructionsText: instructions,
+    cookNotesText,
+  });
+
+  const existingId = await findExistingRecipeIdByFingerprint(fp, null);
+  if (existingId) {
+    alert("This recipe already exists. Opening the existing one instead of creating a duplicate.");
+    activeRecipeId = existingId;
+    render();
+    closeModal();
+    return;
+  }
+
   const recipe = {
     id: null,
     title,
@@ -1049,12 +1328,14 @@ textForm.addEventListener("submit", async (e) => {
     ingredientsText: ingredients,
     instructionsText: instructions,
     cookNotesText,
+    fingerprint: fp,
     image: "",
     body,
     createdAt: now,
     updatedAt: now,
   };
 
+  recipes.push(recipe);
   await saveRecipeToCloud(recipe);
 
   activeRecipeId = recipe.id;
@@ -1073,12 +1354,29 @@ fileForm.addEventListener("submit", async (e) => {
 
   const now = Date.now();
   let lastRecipeId = null;
+  let skipped = 0;
+  let created = 0;
 
   for (const file of files) {
     const text = await file.text();
     const title = file.name.replace(/\.[^.]+$/, "") || "(Untitled file)";
 
     const { ingredients, instructions } = autoSplitRecipeText(text);
+
+    const fp = recipeFingerprint({
+      title,
+      source: "Imported text file",
+      ingredientsText: ingredients,
+      instructionsText: instructions,
+      cookNotesText: "",
+    });
+
+    const existingId = await findExistingRecipeIdByFingerprint(fp, null);
+    if (existingId) {
+      skipped++;
+      lastRecipeId = existingId;
+      continue;
+    }
 
     const recipe = {
       id: null,
@@ -1088,18 +1386,24 @@ fileForm.addEventListener("submit", async (e) => {
       ingredientsText: ingredients,
       instructionsText: instructions,
       cookNotesText: "",
+      fingerprint: fp,
       image: "",
       body: text,
       createdAt: now,
       updatedAt: now,
     };
 
+    recipes.push(recipe);
     await saveRecipeToCloud(recipe);
 
+    created++;
     lastRecipeId = recipe.id;
   }
 
-  // After all files imported, show the last one
+  if (skipped > 0) {
+    alert(`Import finished. Created ${created} new recipe(s). Skipped ${skipped} duplicate(s).`);
+  }
+
   if (lastRecipeId) activeRecipeId = lastRecipeId;
   render();
   closeModal();

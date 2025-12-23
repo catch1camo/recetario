@@ -418,7 +418,7 @@ button {
     position: relative;
     opacity: 1;
     box-shadow: none;
-    background: #dedede; /* THIS change to do? */
+    background: #ccc; /* THIS change to do? */
   }
 }
 
