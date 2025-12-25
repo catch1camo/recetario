@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Recetario 8.6</title>
+  <title>Recetario Chateau</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
 
@@ -42,7 +42,7 @@
 </head>
 <body>
   <header class="app-header">
-    <h1><i data-lucide="chef-hat"></i> Recetari8.6</h1>
+    <h1><i data-lucide="chef-hat" color="9eee93"></i> Recetari0.87</h1>
 
     <div class="auth-bar">
       <div id="authLoggedOut">
@@ -108,7 +108,7 @@
     <div class="modal">
       <header class="modal-header">
         <h2 id="modalTitle">+ Add / Import Recipe</h2>
-        <button id="closeModalBtn" class="icon-btn">&times;</button>
+        <button id="closeModalBtn" class="icon-btn"><i data-lucide="x"></i></button> <!-- &times; -->
       </header>
 
       <div class="modal-tabs">
@@ -297,7 +297,9 @@
   </div>
 
   <!-- Mobile helper: floating "Go up" button -->
-  <button id="goUpBtn" class="go-up-btn hidden" aria-label="Go to top" title="Go to top">↑</button>
+  <button id="goUpBtn" class="go-up-btn hidden" aria-label="Go to top" title="Go to top">
+    <i data-lucide="arrow-up"></i>
+  </button>
 
   <script src="app.js"></script>
 

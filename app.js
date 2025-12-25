@@ -1,4 +1,4 @@
-// Simple recipe app BASE64 img - 8.6
+// Simple recipe app BASE64 img - 8.7
 
 // Firebase app is initialized (defensive)
 if (!firebase.apps || firebase.apps.length === 0) {
@@ -69,6 +69,13 @@ authRegisterBtn.addEventListener("click", async () => {
 authLogoutBtn.addEventListener("click", async () => {
   await auth.signOut();
 });
+
+// clear highlighted recipe card
+function clearActiveRecipeCard() {
+  document
+    .querySelectorAll(".recipe-card.active")
+    .forEach(card => card.classList.remove("active"));
+}
 
 // Handle auth state changes - Firebase
 auth.onAuthStateChanged(async (user) => {
@@ -713,6 +720,8 @@ function renderRecipeList() {
       }
 
       card.addEventListener("click", () => {
+        clearActiveRecipeCard();          // recipe list active state
+        card.classList.add("active");     // recipe list active state
         activeRecipeId = recipe.id;
         render();
       });
@@ -782,9 +791,10 @@ function renderDetail() {
   // NEW U/X Close button (visible only on mobile via CSS)
   const closeBtn = document.createElement("button");
   closeBtn.className = "detail-close-btn";
-  closeBtn.textContent = "Close";
+  closeBtn.textContent = "Close"; // Close Icon
   closeBtn.addEventListener("click", () => {
     activeRecipeId = null;
+    clearActiveRecipeCard();
     recipeDetailEl.classList.add("hidden");
     recipeDetailEl.classList.remove("sheet-open");
     document.body.classList.remove("detail-open");
@@ -792,9 +802,12 @@ function renderDetail() {
   recipeDetailEl.appendChild(closeBtn);
 
   const header = document.createElement("header");
+  header.className = "recipe-detail-header";
 
   const titleBlock = document.createElement("div");
+  titleBlock.className = "recipe-title-block";
   const title = document.createElement("h2");
+  title.className = "recipe-title";
   title.textContent = recipe.title || "(Untitled recipe)";
   titleBlock.appendChild(title);
 
@@ -820,7 +833,7 @@ function renderDetail() {
   }
 
   const actions = document.createElement("div");
-  actions.className = "recipe-actions";
+  actions.className = "recipe-actions top";
   const editBtn = document.createElement("button");
   editBtn.className = "secondary-btn";
   editBtn.textContent = "Edit";
@@ -843,10 +856,11 @@ function renderDetail() {
   // NEW U/X close btn
   const closeDetailBtn = document.createElement("button");
   closeDetailBtn.className = "secondary-btn mobile-only-close";
-  closeDetailBtn.textContent = "Close";
+  closeDetailBtn.textContent = "Close"; // Close Icon
   
   closeDetailBtn.addEventListener("click", () => {
     activeRecipeId = null;
+    clearActiveRecipeCard();   // clear active recipe highlight state
     render(); // this will also remove body.detail-open via renderDetail
   });
 
@@ -854,8 +868,8 @@ function renderDetail() {
   actions.appendChild(deleteBtn);
   actions.appendChild(closeDetailBtn); // NEW U/X
 
-  header.appendChild(titleBlock);
   header.appendChild(actions);
+  header.appendChild(titleBlock);
 
   recipeDetailEl.appendChild(header);
 

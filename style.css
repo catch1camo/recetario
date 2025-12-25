@@ -3,7 +3,7 @@
 *::after {
   box-sizing: border-box;
 }
-/* 8.6 */
+/* 8.7 */
 body {
   margin: 0;
   overflow-x: hidden;
@@ -94,8 +94,8 @@ body {
   align-items: center;
   justify-content: center;
   padding: 4px;
-  /**/
-  font-size: 1.4rem;
+  /*
+  font-size: 1.4rem;*/
   padding: 0.2rem;
   border-radius: 50%; 
 
@@ -120,7 +120,7 @@ body {
 }
 
 #userMenuBtn:hover {
-  background: #eee;
+  background: #ddd;
 }
 
 .userlogoutBtn {
@@ -128,8 +128,8 @@ body {
   padding: 0.45rem 0.9rem;
   font-size: 0.9rem;  
   margin: 0 auto 0.5rem auto;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
   background: #e4e4e4;
   color: #222;
 }
@@ -152,10 +152,10 @@ body {
 
 .search-block input {
   width: 100%;
-  padding: 0.4rem 0.6rem;
+  padding: 0.2rem 0.4rem;
   border-radius: 6px;
   border: 1px solid #ccc;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .tag-block {
@@ -210,8 +210,8 @@ button {
 .secondary-btn,
 #addRecipeBtn {
   border-radius: 999px;
-  padding: 0.45rem 0.9rem;
-  font-size: 0.9rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
 }
 
 #addRecipeBtn,
@@ -222,7 +222,7 @@ button {
 
 #addRecipeBtn:hover,
 .primary-btn:hover {
-  opacity: 0.9;
+  opacity: 0.8;
 }
 
 .secondary-btn {
@@ -347,7 +347,8 @@ button {
 
 .recipe-card:hover {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
+  background-color: #9eee93;
+  /* transform: ;  translateY(-1px) */
 }
 
 .recipe-card-title {
@@ -372,6 +373,16 @@ button {
   border-radius: 999px;
   padding: 0.1rem 0.4rem;
   font-size: 0.75rem;
+}
+
+.recipe-card.active {
+  background-color: #dbf4d8;        /* subtle highlight */
+  border-left: 4px solid #9eee93;   /* accent color */
+}
+
+/* Optional: smoother feel */
+.recipe-card {
+  transition: background-color 0.2s ease, border 0.2s ease;
 }
 
 .empty-state {
@@ -418,7 +429,7 @@ button {
     position: relative;
     opacity: 1;
     box-shadow: none;
-    background: #ccc; /* THIS change to do? */
+    background: #fff; /* THIS change to do? */
   }
 }
 
@@ -497,7 +508,7 @@ button {
   justify-content: center;
   align-items: center;
   padding: 0.5rem;
-  z-index: 20;
+  z-index: 4000;
 }
 
 .modal {
@@ -582,14 +593,38 @@ button {
 
 .recipe-actions {
   display: flex;
+  width: 100%;
   gap: 0.4rem;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.recipe-actions.top {
+  margin-bottom: 0.5rem;
+}
+
+.recipe-detail-header {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.recipe-title {
+  width: 100%;
+  margin: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.recipe-title-block {
+  width: 100%;
 }
 
 .danger-btn {
   background: #d9534f;
   color: #fff;
   border-radius: 999px;
-  padding: 0.3rem 0.6rem;
+  padding: 0.35rem 0.7rem;
   font-size: 0.8rem;
 }
 
